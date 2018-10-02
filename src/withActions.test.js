@@ -1,15 +1,13 @@
 import { shallow } from 'enzyme'
 import * as React from 'react'
 
-import { ActionArg, config, withActions } from './withActions'
+import { config, withActions } from './withActions'
 
-const setupComponent = (mockCallbackImpl?: any) => {
+const setupComponent = (mockCallbackImpl) => {
   const Component = jest.fn(() => null)
   const mockCallback = jest.fn(mockCallbackImpl)
-  const actions = { mock: [mockCallback, { someOption: true }] as ActionArg }
-  const WrappedComponent = withActions(actions)(
-    Component,
-  )
+  const actions = { mock: [mockCallback, { someOption: true }] }
+  const WrappedComponent = withActions(actions)(Component)
 
   const wrapper = shallow(<WrappedComponent id={1} />)
   wrapper.render()
@@ -54,7 +52,7 @@ describe('withActions', () => {
     expect(Component.mock.calls[1][0].mock.isLoading).toBe(true)
 
     if (resolveCallback) {
-      ;(resolveCallback as (...args: any[]) => void)()
+      resolveCallback()
       await wait()
       wrapper.render()
       expect(Component.mock.calls[2][0].mock.isLoading).toBe(false)
@@ -76,7 +74,7 @@ describe('withActions', () => {
     wrapper.render()
 
     if (resolveCallback) {
-      ;(resolveCallback as (...args: any[]) => void)(2)
+      resolveCallback(2)
       await wait()
       wrapper.render()
       expect(Component.mock.calls[2][0].mock.response).toBe(2)
@@ -98,7 +96,7 @@ describe('withActions', () => {
     wrapper.render()
 
     if (rejectCallback) {
-      ;(rejectCallback as (...args: any[]) => void)(new Error('reject test'))
+      rejectCallback(new Error('reject test'))
       await wait()
       wrapper.render()
       expect(Component.mock.calls[2][0].mock.error instanceof Error).toBe(true)
@@ -124,7 +122,7 @@ describe('withActions', () => {
     wrapper.render()
 
     if (rejectCallback) {
-      ;(rejectCallback as (...args: any[]) => void)(new Error('reject test'))
+      rejectCallback(new Error('reject test'))
       await wait()
       expect(errorHandler.mock.calls[0][0]).toBe('mock')
       expect(errorHandler.mock.calls[0][1].message).toBe('reject test')
@@ -140,7 +138,7 @@ describe('withActions', () => {
     const errorHandler = jest.fn()
     config.errorHandler = errorHandler
 
-    const { wrapper, Component } = setupComponent(async (token: any) => {
+    const { wrapper, Component } = setupComponent(async (token) => {
       await wait()
       expect(token.result).toBeTruthy()
       token.throwIfRequested()

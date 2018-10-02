@@ -1,8 +1,5 @@
 module.exports = {
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  moduleFileExtensions: ['js', 'jsx', 'json'],
   setupFiles: ['<rootDir>/enzymeSetup.js'],
-  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$',
-  transform: {
-    '^.+\\.tsx?$': 'ts-jest',
-  },
+  testRegex: 'src/.*\\.test\\.jsx?$',
 }
