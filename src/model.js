@@ -53,7 +53,7 @@ export const model = (name: string, actions: Object, defaultState: any) => {
 
   return (WrappedComponent) => {
     class ComponentState extends React.PureComponent {
-      static displayName = `ComponentState(${getDisplayName(WrappedComponent)})`
+      static displayName = `ComponentModel(${getDisplayName(WrappedComponent)})`
 
       constructor(props) {
         super(props)
@@ -90,7 +90,6 @@ export const model = (name: string, actions: Object, defaultState: any) => {
             'There is not a reagent substore, you probably forgot to add it to your redux store',
           )
         }
-        console.log('reagent store', state.reagent)
         return {
           modelState:
             state.reagent[modelId] === undefined

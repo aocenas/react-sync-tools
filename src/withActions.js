@@ -80,26 +80,36 @@ export const withActions = (actions) => (WrappedComponent) => {
      * Wraps the action function in handler that handles errors, state changes
      * and creation of cancel tokens.
      * @param func
+     * @param afterFunc
      * @param key
      * @param options
      */
-    createRunHandler = (func, key, options) => {
-      return async (...args) => {
+    createRunHandler = (func, afterFunc, key, options) => {
+      return async (params, actionOptions) => {
+        const clear = actionOptions && actionOptions.clear
         if (this.cancelTokens[key]) {
           this.cancelTokens[key].cancel()
         }
-        this.cancelTokens[key] = config.createCancelToken()
+        this.cancelTokens[key] = withActions.config.createCancelToken()
+        // At this point we do not delete the error or response so you can have
+        // response while the request is reloading
         this.setState({
-          [key]: { run: this.state[key].run, isLoading: true },
+          [key]: {
+            ...(clear ? { run: this.state[key].run } : this.state[key]),
+            isLoading: true,
+          },
         })
 
         let response
         try {
-          response = await func(
-            this.cancelTokens[key].token,
-            this.props,
-            ...args,
-          )
+          response = await func({
+            cancelToken: this.cancelTokens[key].token,
+            props: this.props,
+            params,
+          })
+          if (afterFunc) {
+            await afterFunc(response, params, this.props)
+          }
         } catch (error) {
           this.handleRunError(key, error, options)
           return
@@ -107,7 +117,11 @@ export const withActions = (actions) => (WrappedComponent) => {
 
         delete this.cancelTokens[key]
         this.setState({
-          [key]: { run: this.state[key].run, isLoading: false, response },
+          [key]: {
+            run: this.state[key].run,
+            isLoading: false,
+            response,
+          },
         })
       }
     }
@@ -120,6 +134,7 @@ export const withActions = (actions) => (WrappedComponent) => {
      * @param options
      */
     handleRunError = (key, error, options) => {
+      const { config } = withActions
       delete this.cancelTokens[key]
       if (!config.isCancel(error)) {
         this.setState({
@@ -139,20 +154,25 @@ export const withActions = (actions) => (WrappedComponent) => {
 
     actionArgToActionPropMapper = (func, key) => {
       let options = {}
-      let actionFunc
+      let actionFunc = null
+      let afterFunc = null
       if (Array.isArray(func)) {
         ;[actionFunc, options] = func
-      } else {
+      } else if (typeof func === 'function') {
         actionFunc = func
+      } else {
+        actionFunc = func.action
+        afterFunc = func.after
+        options = func.options
       }
       return {
-        run: this.createRunHandler(actionFunc, key, options),
+        run: this.createRunHandler(actionFunc, afterFunc, key, options),
       }
     }
   }
 }
 
-export const config =
+withActions.config =
   //   {
   //   /**
   //    * Factory function creating cancel tokens. By default it is.
@@ -184,4 +204,5 @@ export const config =
   {
     createCancelToken: axios.CancelToken.source,
     isCancel: axios.isCancel,
+    errorHandler: null,
   }

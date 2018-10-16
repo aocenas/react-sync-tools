@@ -24,7 +24,10 @@ export const onChange = (propsList, action) => (WrappedComponent) =>
     }
 
     componentDidUpdate(prevProps) {
-      if (hasChanged(propsList, prevProps, this.props)) {
+      if (
+        propsList &&
+        hasChanged(propsList, prevProps, this.props)
+      ) {
         action(this.props)
       }
     }
