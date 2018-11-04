@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "jsx": "react",
+    "outDir": "./build",
+    "target": "ES5",
+    "noImplicitAny": true,
+    "preserveConstEnums": true,
+    "sourceMap": true,
+    "strictNullChecks": true,
+    "lib": ["es5", "es2015.promise", "dom"]
+  },
+  "include": [
+    "src/**/*"
+  ]
+}

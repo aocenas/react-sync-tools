@@ -15,24 +15,24 @@ import { getDisplayName, hasChanged } from './utils'
  * @param action - Simple function with side effect that will get props as
  *   argument.
  */
-export const onChange = (propsList, action) => (WrappedComponent) =>
-  class OnChange extends React.PureComponent {
-    static displayName = `OnChange(${getDisplayName(WrappedComponent)})`
+export const onChange = <P extends {}>(
+  propsList: Array<keyof P>,
+  action: (props: P) => void,
+) => (WrappedComponent: React.ComponentType<P>) =>
+  class OnChange extends React.PureComponent<P> {
+    public static displayName = `OnChange(${getDisplayName(WrappedComponent)})`
 
-    componentDidMount() {
+    public componentDidMount() {
       action(this.props)
     }
 
-    componentDidUpdate(prevProps) {
-      if (
-        propsList &&
-        hasChanged(propsList, prevProps, this.props)
-      ) {
+    public componentDidUpdate(prevProps: P) {
+      if (propsList && hasChanged(propsList, prevProps, this.props)) {
         action(this.props)
       }
     }
 
-    render() {
+    public render() {
       return <WrappedComponent {...this.props} />
     }
   }

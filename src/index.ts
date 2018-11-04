@@ -1,6 +1,7 @@
 export { withActions } from './withActions'
 export { onChange } from './onChange'
-export { model, reducer } from './model'
+export { makeModel, withModel } from './model'
+export { reducer } from './model-redux'
 export { pickProps } from './pickProps'
 export { ActionShape } from './propTypes'
 export { withLoading } from './withLoading'

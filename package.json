@@ -9,6 +9,9 @@
     "test": "jest"
   },
   "dependencies": {
+    "@types/lodash": "^4.14.117",
+    "@types/react": "^16.4.18",
+    "@types/react-redux": "^6.0.9",
     "lodash": "^4.17.11",
     "prop-types": "^15.6.2"
   },
@@ -17,6 +20,9 @@
     "react": ">=15"
   },
   "devDependencies": {
+    "@types/enzyme": "^3.1.14",
+    "@types/jest": "^23.3.9",
+    "@types/react-dom": "^16.0.9",
     "axios": "^0.18.0",
     "babel-cli": "^6.26.0",
     "babel-eslint": "^9.0.0",
@@ -37,8 +43,12 @@
     "jest": "^23.5.0",
     "prettier": "^1.14.2",
     "react": "^16.4.2",
-    "react-dom": "^16.4.2",
+    "react-dom": "^16.6.0",
     "react-redux": "^5.0.7",
-    "redux": "^4.0.0"
+    "redux": "^4.0.0",
+    "redux-thunk": "^2.3.0",
+    "ts-jest": "^23.10.4",
+    "tslint": "^5.11.0",
+    "typescript": "^3.1.3"
   }
 }

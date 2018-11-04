@@ -1,23 +1,4 @@
-import { hasChanged, mapValues } from './utils'
-
-describe('mapValues', () => {
-  it('Maps values', () => {
-    expect(
-      mapValues(
-        {
-          one: 1,
-          tow: 2,
-          three: 3,
-        },
-        (x) => x * x,
-      ),
-    ).toEqual({
-      one: 1,
-      tow: 4,
-      three: 9,
-    })
-  })
-})
+import { hasChanged } from './utils'
 
 describe('hasChanged', () => {
   it('Detects changes in specified keys', () => {
