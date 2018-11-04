@@ -25,7 +25,7 @@ const createSimpleApp = () => {
     public render() {
       const { user } = this.props
       return (
-        <div>
+        <>
           {user ? (
             <>
               <span id={'user-name'}>{user.name}</span>
@@ -37,7 +37,7 @@ const createSimpleApp = () => {
             <span>No user</span>
           )}
           <TestSubComponentWithModel />
-        </div>
+        </>
       )
     }
   }
@@ -49,7 +49,7 @@ const createSimpleApp = () => {
   }> {
     public render() {
       return (
-        <div>
+        <>
           <span id={'user-name-2'}>
             {this.props.user ? this.props.user.name : null}
           </span>
@@ -72,7 +72,7 @@ const createSimpleApp = () => {
           >
             Rename
           </button>
-        </div>
+        </>
       )
     }
   }
