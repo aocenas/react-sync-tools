@@ -13,7 +13,7 @@ interface PropsFromConnect<S> {
   modelState: S
 }
 
-type ActionFunc<S> = (state: S, args: any) => S
+type ActionFunc<S> = (state: S, ...args: any[]) => S
 type MappedActions<A> = { [P in keyof A]: (arg: any) => void }
 
 interface ActionObject<S> {
@@ -57,13 +57,21 @@ export const makeModel = <S, A extends ActionObject<S>>(
   }
 }
 
-export const withModel = <A extends ActionObject<S>, S, MP>(
+export const withModel = <
+  A extends ActionObject<S>,
+  S,
+  MP,
+  P extends { [key: string]: any },
+  InnerProps extends PropsFromConnect<S> & Subtract<P, MP>
+>(
   model: Model<S, A>,
-  mapProps: (state: S, actions: ActionsWithSetState<MappedActions<A>, S>) => MP,
+  mapProps: (
+    state: S,
+    actions: ActionsWithSetState<MappedActions<A>, S>,
+    props: InnerProps,
+  ) => MP,
 ) => {
-  return <P extends {[key: string]: any}>(WrappedComponent: React.ComponentType<P>) => {
-    type InnerProps = PropsFromConnect<S> & Subtract<P, MP>
-
+  return (WrappedComponent: React.ComponentType<P>) => {
     class ComponentState extends React.PureComponent<InnerProps> {
       public static displayName = `ComponentModel(${getDisplayName(
         WrappedComponent,
@@ -76,8 +84,8 @@ export const withModel = <A extends ActionObject<S>, S, MP>(
         const actionsMapped = Object.keys(model.actions).reduce<{
           [key: string]: (arg: any) => void
         }>((acc, key) => {
-          acc[key] = (arg: any) => {
-            props.modelUpdateAction(model.id, model.actions[key], arg)
+          acc[key] = (...args: any[]) => {
+            props.modelUpdateAction(model.id, model.actions[key], ...args)
           }
           return acc
         }, {}) as MappedActions<A>
@@ -93,10 +101,20 @@ export const withModel = <A extends ActionObject<S>, S, MP>(
       }
 
       public render() {
+        // Remove props which are here from the Redux so we do not leak that implementation
+        // detail
+        const ownProps = _.omit(this.props, ['modelState', 'modelUpdateAction'])
+        // Use the mapProps function to map props provided by this HOC. This way
+        // client can decide what he needs and easily use PureComponent
+        const mappedProps = mapProps(
+          this.props.modelState,
+          this.modelActions,
+          ownProps,
+        )
         return (
           <WrappedComponent
-            {...mapProps(this.props.modelState, this.modelActions)}
-            {..._.omit(this.props, ['modelState', 'modelUpdateAction'])}
+            {...mappedProps}
+            {...ownProps}
           />
         )
       }

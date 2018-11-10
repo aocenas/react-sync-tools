@@ -1,4 +1,4 @@
-export { withActions } from './withActions'
+export { withActions, ActionProp } from './withActions'
 export { onChange } from './onChange'
 export { makeModel, withModel } from './model'
 export { reducer } from './model-redux'

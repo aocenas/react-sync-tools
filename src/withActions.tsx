@@ -1,19 +1,23 @@
 import { mapValues } from 'lodash'
-import axios, { AxiosResponse, CancelTokenSource, CancelToken } from 'axios'
+import axios, { CancelTokenSource, CancelToken } from 'axios'
 import * as React from 'react'
 import { getDisplayName, Subtract } from './utils'
 
 type ActionFunc = (
   args: { cancelToken: CancelToken; props: any; params: any },
-) => Promise<AxiosResponse<any>>
+) => Promise<{ data: any }>
 
 type AfterFunc = (
-  response: AxiosResponse,
+  response: { data: any },
   props: any,
   params: any,
+) => void | Promise<void>
+
+export type RunHandler = (
+  params?: any,
+  actionOptions?: { clear: boolean },
 ) => Promise<void>
 
-export type RunHandler = (params: any, actionOptions?: { clear: boolean }) => Promise<void>
 /**
  * Object wrapping the state of the action which is passed to wrapped component.
  * The state changes are:
@@ -36,11 +40,11 @@ export type RunHandler = (params: any, actionOptions?: { clear: boolean }) => Pr
  *   ActionProps.run -> Loading
  *
  */
-export interface ActionProp {
+export interface ActionProp<R = any> {
   run: RunHandler
   isLoading?: boolean
   error?: any
-  response?: any
+  response?: R
 }
 
 export type State<P extends string | number | symbol> = Record<P, ActionProp>
@@ -54,35 +58,6 @@ export type ActionDef =
       options?: object
     }
 
-interface Config {
-  /**
-   * Factory function creating cancel tokens. By default it is.
-   * axios.CancelToken.source but you can supply you own.
-   */
-  createCancelToken: () => CancelTokenSource
-  /**
-   * By default Axios will throw in case the request is canceled and this check
-   * if the thrown error is cancellation error.
-   * @param error
-   */
-  isCancel: (error: any) => boolean
-
-  /**
-   * In case error is not a cancellation error, it will be handled by this
-   * function. If not supplied it will be just console.error logged.
-   * @param key - Name of the action.
-   * @param error - Error instance.
-   * @param options - Any options that were passed with the Action.
-   * @param action - Action function that can be called again.
-   */
-  errorHandler?: (
-    key: string,
-    error: any,
-    options: object | undefined | null,
-    action: RunHandler,
-  ) => void
-}
-
 /**
  * Component wrapper that transforms supplied Actions into ActionProp while
  * handling ActionProp lifecycle changes, like error/loading/canceled states.
@@ -90,12 +65,17 @@ interface Config {
  *   [function, options]. Options can be any object, it is just passed to
  *   config.errorHandler so you can have action specific error handling.
  */
-export const withActions = <
-  A extends { [key: string]: ActionDef},
->(
+export const withActions = <A extends { [key: string]: ActionDef }>(
   actions: A,
-) => <P extends {}>(WrappedComponent: React.ComponentType<P & State<keyof A>>) => {
-  return class ComponentActions extends React.PureComponent<Subtract<P, A>, State<keyof A>> {
+) => <P extends { [key: string]: any }>(
+  WrappedComponent: React.ComponentType<P>,
+) => {
+  type InnerProps = Subtract<P, A>
+
+  return class ComponentActions extends React.PureComponent<
+    InnerProps,
+    State<keyof A>
+  > {
     public static displayName = `ComponentActions(${getDisplayName(
       WrappedComponent,
     )})`
@@ -103,9 +83,11 @@ export const withActions = <
     /**
      * Cancel tokens of in progress actions. Used for cancellation on unmount.
      */
-    private readonly cancelTokens: Partial<{[K in keyof A]: CancelTokenSource}> = {}
+    private readonly cancelTokens: Partial<
+      { [K in keyof A]: CancelTokenSource }
+    > = {}
 
-    constructor(props: P) {
+    constructor(props: InnerProps) {
       super(props)
       this.cancelTokens = {}
       this.state = mapValues(
@@ -121,7 +103,6 @@ export const withActions = <
     }
 
     public render() {
-      // @ts-ignore
       return <WrappedComponent {...this.props} {...this.state} />
     }
 
@@ -142,7 +123,7 @@ export const withActions = <
       return async (params: any, actionOptions?: { clear: boolean }) => {
         const clear = actionOptions && actionOptions.clear
         if (this.cancelTokens[key]) {
-          (this.cancelTokens[key] as CancelTokenSource).cancel()
+          ;(this.cancelTokens[key] as CancelTokenSource).cancel()
         }
         this.cancelTokens[key] = withActions.config.createCancelToken()
         // At this point we do not delete the error or response so you can have
@@ -192,7 +173,11 @@ export const withActions = <
      * @param error
      * @param options
      */
-    private handleRunError = (key: keyof A, error: Error, options: object | undefined | null) => {
+    private handleRunError = (
+      key: keyof A,
+      error: Error,
+      options: object | undefined | null,
+    ) => {
       const config = withActions.config
       delete this.cancelTokens[key]
       if (!config.isCancel(error)) {
@@ -204,14 +189,22 @@ export const withActions = <
           },
         } as Record<keyof A, ActionProp>)
         if (config.errorHandler) {
-          config.errorHandler(key as string, error, options, this.state[key].run)
+          config.errorHandler(
+            key as string,
+            error,
+            options,
+            this.state[key].run,
+          )
         } else {
           console.error(error)
         }
       }
     }
 
-    private actionArgToActionPropMapper = (func: ActionDef, key: keyof A): ActionProp => {
+    private actionArgToActionPropMapper = (
+      func: ActionDef,
+      key: keyof A,
+    ): ActionProp => {
       let options
       let actionFunc
       let afterFunc
@@ -229,6 +222,35 @@ export const withActions = <
       }
     }
   }
+}
+
+interface Config {
+  /**
+   * Factory function creating cancel tokens. By default it is.
+   * axios.CancelToken.source but you can supply you own.
+   */
+  createCancelToken: () => CancelTokenSource
+  /**
+   * By default Axios will throw in case the request is canceled and this check
+   * if the thrown error is cancellation error.
+   * @param error
+   */
+  isCancel: (error: any) => boolean
+
+  /**
+   * In case error is not a cancellation error, it will be handled by this
+   * function. If not supplied it will be just console.error logged.
+   * @param key - Name of the action.
+   * @param error - Error instance.
+   * @param options - Any options that were passed with the Action.
+   * @param action - Action function that can be called again.
+   */
+  errorHandler?: (
+    key: string,
+    error: any,
+    options: object | undefined | null,
+    action: RunHandler,
+  ) => void
 }
 
 withActions.config = {
