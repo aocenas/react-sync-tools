@@ -148,7 +148,7 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
             params,
           })
           if (afterFunc) {
-            await afterFunc(response, params, this.props)
+            afterFunc(response, params, this.props)
           }
         } catch (error) {
           this.handleRunError(key, error, options)

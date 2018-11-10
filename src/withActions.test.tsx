@@ -126,10 +126,10 @@ describe('withActions', () => {
     const errorHandler = jest.fn()
     withActions.config.errorHandler = errorHandler
 
-    const { wrapper, Component } = setupComponent(async (token) => {
+    const { wrapper, Component } = setupComponent(async ({ cancelToken }) => {
       await wait()
-      expect(token.result).toBeTruthy()
-      token.throwIfRequested()
+      expect(cancelToken.reason).toBeTruthy()
+      cancelToken.throwIfRequested()
     })
     Component.mock.calls[0][0].mock.run(1)
     wrapper.unmount()
