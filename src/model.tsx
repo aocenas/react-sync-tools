@@ -6,10 +6,13 @@ import { getDisplayName, Subtract } from './utils'
 import {
   ModelUpdateActionCreatorType,
   modelUpdateActionCreator,
+  modelSetStateActionCreator,
+  registerReducer,
 } from './model-redux'
 
 interface PropsFromConnect<S> {
   modelUpdateAction: ModelUpdateActionCreatorType
+  modelSetStateAction: ModelUpdateActionCreatorType
   modelState: S
 }
 
@@ -50,6 +53,10 @@ export const makeModel = <S, A extends ActionObject<S>>(
       .toString(32)
       .substr(2, 8)
 
+  Object.keys(actions).forEach((key) => {
+    registerReducer(id, key, actions[key])
+  })
+
   return {
     id,
     actions,
@@ -81,17 +88,18 @@ export const withModel = <
 
       constructor(props: InnerProps) {
         super(props)
+
         const actionsMapped = Object.keys(model.actions).reduce<{
           [key: string]: (arg: any) => void
         }>((acc, key) => {
           acc[key] = (...args: any[]) => {
-            props.modelUpdateAction(model.id, model.actions[key], ...args)
+            props.modelUpdateAction(model.id, key, ...args)
           }
           return acc
         }, {}) as MappedActions<A>
 
         actionsMapped.setState = (funcOrObj: SetStateFuncArg<S>) => {
-          props.modelUpdateAction(model.id, funcOrObj)
+          props.modelSetStateAction(model.id, funcOrObj)
         }
 
         this.modelActions = actionsMapped as ActionsWithSetState<
@@ -111,12 +119,7 @@ export const withModel = <
           this.modelActions,
           ownProps,
         )
-        return (
-          <WrappedComponent
-            {...mappedProps}
-            {...ownProps}
-          />
-        )
+        return <WrappedComponent {...mappedProps} {...ownProps} />
       }
     }
 
@@ -134,7 +137,10 @@ export const withModel = <
               : state.reagent[model.id],
         } as { modelState: S }
       },
-      { modelUpdateAction: modelUpdateActionCreator },
+      {
+        modelUpdateAction: modelUpdateActionCreator,
+        modelSetStateAction: modelSetStateActionCreator,
+      },
     )(ComponentState)
   }
 }
