@@ -1,4 +1,4 @@
-import { mapValues } from 'lodash'
+import mapValues = require('lodash/mapValues')
 import axios, { CancelTokenSource, CancelToken } from 'axios'
 import * as React from 'react'
 import { getDisplayName, Subtract } from './utils'
@@ -13,9 +13,15 @@ type AfterFunc = (
   params: any,
 ) => void | Promise<void>
 
+/**
+ * This is the type of function that is provided to client as action.run.
+ */
 export type RunHandler = (
   params?: any,
-  actionOptions?: { clear: boolean },
+  actionOptions?: {
+    // If true the last response will be deleted on invocation.
+    clear: boolean
+  },
 ) => Promise<void>
 
 /**
@@ -54,16 +60,20 @@ export type ActionDef =
   | ActionFunc
   | {
       action: ActionFunc
+      // Function that will be invoked with the response of the action. Mainly
+      // for convenience as you could inline it into action.
       after?: AfterFunc
-      options?: object
+      // This is not used by the code here but it is passed to custom errorHandler
+      options?: any
     }
 
 /**
  * Component wrapper that transforms supplied Actions into ActionProp while
  * handling ActionProp lifecycle changes, like error/loading/canceled states.
- * @param actions - You can supply either a function or a tuple of
- *   [function, options]. Options can be any object, it is just passed to
- *   config.errorHandler so you can have action specific error handling.
+ * @param actions - You can supply object of ActionDefs depending on whether you
+ * want to specify also after function or options or both. Options can be any
+ * object, it is just passed to config.errorHandler so you can use it to have
+ * action specific error handling.
  */
 export const withActions = <A extends { [key: string]: ActionDef }>(
   actions: A,
@@ -108,7 +118,8 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
 
     /**
      * Wraps the action function in handler that handles errors, state changes
-     * and creation of cancel tokens.
+     * and creation of cancel tokens. Returns a function that is than directly
+     * passed as action.run.
      * @param func
      * @param afterFunc
      * @param key
@@ -118,7 +129,7 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
       func: ActionFunc,
       afterFunc: AfterFunc | undefined | null,
       key: keyof A,
-      options: object | undefined | null,
+      options: any,
     ): RunHandler => {
       return async (params: any, actionOptions?: { clear: boolean }) => {
         const clear = actionOptions && actionOptions.clear
@@ -126,8 +137,8 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
           ;(this.cancelTokens[key] as CancelTokenSource).cancel()
         }
         this.cancelTokens[key] = withActions.config.createCancelToken()
-        // At this point we do not delete the error or response so you can have
-        // response while the request is reloading
+
+        // We clear the state depending on the clear option.
         const newActionProp: ActionProp = clear
           ? {
               run: this.state[key].run,
@@ -137,7 +148,6 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
               ...(this.state[key] as ActionProp),
               isLoading: true,
             }
-
         this.setState({ [key]: newActionProp } as State<keyof A>)
 
         let response
@@ -155,6 +165,7 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
           return
         }
 
+        // If no error, we update the action state with response.
         delete this.cancelTokens[key]
         this.setState({
           [key]: {
@@ -201,6 +212,13 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
       }
     }
 
+    /**
+     * Takes the definition of actions passed to the HOC and returns initial
+     * state of the action that can be passed as an action object to the wrapped
+     * component.
+     * @param func
+     * @param key
+     */
     private actionArgToActionPropMapper = (
       func: ActionDef,
       key: keyof A,
@@ -218,6 +236,7 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
         options = func.options
       }
       return {
+        isLoading: false,
         run: this.createRunHandler(actionFunc, afterFunc, key, options),
       }
     }

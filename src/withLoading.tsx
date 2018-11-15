@@ -1,4 +1,4 @@
-import * as _ from 'lodash'
+import castArray = require('lodash/castArray')
 import * as React from 'react'
 import { ActionProp } from './withActions'
 import { getDisplayName } from './utils'
@@ -39,7 +39,7 @@ export const withLoading = <
     public render() {
       // actionKeys should be only keys to values of type ActionProp so we should
       // be certain here we can force cast it this way
-      const actionProps = (_.castArray(actionKeys).map((actionKey) => {
+      const actionProps = (castArray(actionKeys).map((actionKey) => {
         return this.props[actionKey]
       }) as unknown) as ActionProp[]
 
@@ -70,4 +70,4 @@ withLoading.config = {
       {hasData ? 'Reloading' : 'Loading...'}
     </span>
   ),
-} as {SpinnerEl: React.ComponentType<SpinnerElProps>}
+} as { SpinnerEl: React.ComponentType<SpinnerElProps> }

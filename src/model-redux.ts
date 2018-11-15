@@ -1,18 +1,15 @@
-import { startsWith } from 'lodash'
-const actionPrefix = '@reagent/modelUpdate'
+import startsWith = require('lodash/startsWith')
 import { Dispatch } from 'redux'
 
-export type ActionFunc<S extends any> = (state: S, arg: any) => S
+const actionPrefix = '@reagent/modelUpdate'
 
-export type ModelUpdateActionCreatorType = <S extends any>(
-  modelId: string,
-  newStateOrFunc: ActionFunc<S> | any,
-  ...args: any[]
-) => (dispatch: Dispatch, getState: () => S) => void
-
-export const modelSetStateActionCreator: ModelUpdateActionCreatorType = <
-  S extends any
->(
+/**
+ * Action createor that allows to either completely replace the model state or
+ * allows you to pass a function acting as a reducer.
+ * @param modelId
+ * @param newStateOrFunc
+ */
+export const modelSetStateActionCreator = <S extends any>(
   modelId: string,
   newStateOrFunc: ((state: S) => S) | any,
 ) => (dispatch: Dispatch, getState: () => S) => {
@@ -26,42 +23,63 @@ export const modelSetStateActionCreator: ModelUpdateActionCreatorType = <
   })
 }
 
-export const modelUpdateActionCreator: ModelUpdateActionCreatorType = <
-  S extends any
->(
+/**
+ * Action creator used for model actions. Type of the action is a path to reducer
+ * and payload will be args meant to be passed to that reducer.
+ * @param modelId
+ * @param actionName
+ * @param args
+ */
+export const modelUpdateActionCreator = <S extends any>(
   modelId: string,
   actionName: string,
   ...args: any[]
-) => (dispatch: Dispatch) => {
-  dispatch({
+) => {
+  return {
     type: [actionPrefix, modelId, actionName].join('/'),
     payload: args,
-  })
+  }
 }
 
-export const reducer = (state: any = {}, action: { type: string, payload: any } & {}) => {
+/**
+ * Single reducer for all models. Actual reducers are dynamically dispatched
+ * based on the type from reducers object.
+ * @param state
+ * @param action
+ */
+export const reducer = (
+  state: any = {},
+  action: { type: string; payload: any } & {},
+) => {
   if (!startsWith(action.type, actionPrefix)) {
     return state
   }
 
-  const [,,modelId, actionName]= action.type.split('/')
+  const [, , modelId, actionName] = action.type.split('/')
 
+  // Base action that is allways provided for each model.
   if (actionName === 'setState') {
     return {
       ...state,
-      [modelId]: action.payload
+      [modelId]: action.payload,
     }
   } else {
     return {
       ...state,
-      [modelId]: reducers[modelId][actionName](state[modelId], ...action.payload)
+      // Invoking the specific reducer
+      [modelId]: reducers[modelId][actionName](
+        state[modelId],
+        ...action.payload,
+      ),
     }
   }
 }
 
+type ReducerFunc<S> = (state: S, ...args: any[]) => S
+
 interface ReducersMap {
   [modelId: string]: {
-    [actionName: string]: Function
+    [actionName: string]: ReducerFunc<any>
   }
 }
 const reducers: ReducersMap = {}

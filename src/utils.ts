@@ -17,32 +17,3 @@ export const hasChanged = <T extends {}>(
     return prev[prop] !== next[prop]
   })
 }
-
-/**
- * Memoize with cache size of 1. Something like reselect but comparing all
- * arguments so makes sense to use to prevent rerenders in React
- * @param fn
- * @return {Function}
- */
-export function simpleMemoize(fn: (...args: any[]) => any) {
-  let lastArgs: any[] | null = null
-  let lastReturn: any[] | null = null
-  return (...args: any[]) => {
-    if (
-      lastArgs &&
-      args.every((val, index) => {
-        const same = val === (lastArgs as any[])[index]
-        // if (!same) {
-        //   console.log(index, val, 'changed')
-        // }
-        return same
-      })
-    ) {
-      return lastReturn
-    } else {
-      lastReturn = fn(...args)
-      lastArgs = args
-      return lastReturn
-    }
-  }
-}

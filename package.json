@@ -6,23 +6,24 @@
   "scripts": {
     "build": "babel src --out-dir build",
     "build:watch": "babel src --out-dir build --watch",
-    "test": "jest"
+    "test": "jest",
+    "example": "parcel examples/todoApp/index.html"
   },
   "dependencies": {
-    "@types/lodash": "^4.14.117",
-    "@types/react": "^16.4.18",
-    "@types/react-redux": "^6.0.9",
-    "lodash": "^4.17.11",
-    "prop-types": "^15.6.2"
+    "lodash": "^4.17.11"
   },
   "peerDependencies": {
     "axios": ">=0.16.0",
-    "react": ">=15"
+    "react": ">=15",
+    "prop-types": ">=15"
   },
   "devDependencies": {
     "@types/enzyme": "^3.1.14",
     "@types/jest": "^23.3.9",
+    "@types/lodash": "^4.14.118",
+    "@types/react": "^16.7.6",
     "@types/react-dom": "^16.0.9",
+    "@types/react-redux": "^6.0.9",
     "axios": "^0.18.0",
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.3",
@@ -44,6 +45,7 @@
     "jest": "^23.6.0",
     "parcel": "^1.10.3",
     "prettier": "^1.14.3",
+    "prop-types": "^15.6.2",
     "react": "^16.6.0",
     "react-dom": "^16.6.0",
     "react-redux": "^5.1.0",
