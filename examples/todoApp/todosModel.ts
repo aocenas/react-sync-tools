@@ -87,12 +87,16 @@ const actions = {
   },
 }
 
-export const withTodos = (
-  selector: (state: Todos, actions: any, props: any) => object,
-) => (component: React.ComponentType) =>
-  withModel(todosModel, (state, modelActions, props) => ({
-    // model actions needed by the actions
-    addTodo: modelActions.addTodo,
-    setTodos: modelActions.setState,
-    ...selector(state, modelActions, props),
-  }))(withActions(actions)(component))
+export const withTodos = <P extends {}, Selected extends {}>(
+  selector: (state: Todos, actions: any, props: any) => Selected,
+) => (component: React.ComponentType<P>) =>
+  withModel(todosModel, (state, modelActions, props) =>
+    Object.assign(
+      {
+        // model actions needed by the actions
+        addTodo: modelActions.addTodo,
+        setTodos: modelActions.setState,
+      },
+      selector(state, modelActions, props),
+    ),
+  )(withActions(actions)(component))
