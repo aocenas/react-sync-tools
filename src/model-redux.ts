@@ -4,7 +4,7 @@ import { Dispatch } from 'redux'
 const actionPrefix = '@reagent/modelUpdate'
 
 /**
- * Action createor that allows to either completely replace the model state or
+ * Action creator that allows to either completely replace the model state or
  * allows you to pass a function acting as a reducer.
  * @param modelId
  * @param newStateOrFunc
@@ -82,6 +82,10 @@ interface ReducersMap {
     [actionName: string]: ReducerFunc<any>
   }
 }
+
+/**
+ * Model action functions are registered here and called from the reducer.
+ */
 const reducers: ReducersMap = {}
 
 export const registerReducer = (
