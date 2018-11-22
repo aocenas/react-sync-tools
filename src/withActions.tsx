@@ -3,10 +3,19 @@ import axios, { CancelTokenSource, CancelToken } from 'axios'
 import * as React from 'react'
 import { getDisplayName, Subtract } from './utils'
 
+/**
+ * Definition of the code run by the action. You can use cancelToken to
+ * implement cancellation (see config to configure cancelToken creation)
+ */
 type ActionFunc = (
   args: { cancelToken: CancelToken; props: any; params: any },
 ) => Promise<{ data: any }>
 
+/**
+ * After function will get the response from the action function, your component
+ * props and params that were supplied to the action function. It is not called
+ * if your action function throws.
+ */
 type AfterFunc = (
   response: { data: any },
   props: any,
@@ -14,7 +23,8 @@ type AfterFunc = (
 ) => void | Promise<void>
 
 /**
- * This is the type of function that is provided to client as action.run.
+ * Function you call from the component what you want to fire the action is
+ * bound to ActionProp.
  */
 export type RunHandler = (
   params?: any,
@@ -56,8 +66,16 @@ export interface ActionProp<R = any> {
 export type State<P extends string | number | symbol> = Record<P, ActionProp>
 
 export type ActionDef =
-  | [ActionFunc, object]
+  // Just an action function
   | ActionFunc
+
+  // Array with action function as a first element and options as a second. Options are passed into custom errorHandler
+  // function so that you can change error handling for some particular action. For example you can have some default
+  // handling for all actions, but you do not want that for you form submit actions where you want to show 400 responses
+  // inline.
+  | [ActionFunc, object]
+
+  // An object with in addition can define after function.
   | {
       action: ActionFunc
       // Function that will be invoked with the response of the action. Mainly
@@ -68,8 +86,9 @@ export type ActionDef =
     }
 
 /**
- * Component wrapper that transforms supplied Actions into ActionProp while
- * handling ActionProp lifecycle changes, like error/loading/canceled states.
+ * HOC that transforms supplied async action functions into properties with
+ * state, and trigger function (type ActionProp). It handles state changes,
+ * cancellation and errorHandling.
  * @param actions - You can supply object of ActionDefs depending on whether you
  * want to specify also after function or options or both. Options can be any
  * object, it is just passed to config.errorHandler so you can use it to have

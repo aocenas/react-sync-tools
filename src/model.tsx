@@ -61,7 +61,7 @@ interface PropsInjectedByConnect<S> {
  * redux store where the data is stored and discern the redux actions when
  * debuggind.
  * @param actions - A set of reducers tied to this model.
- * @param defaultState
+ * @param defaultState - Default state of the model before any modification.
  */
 export const makeModel = <S, A extends ActionObject<S>>(
   name: string,
@@ -98,11 +98,13 @@ export const makeModel = <S, A extends ActionObject<S>>(
 
 /**
  * HOC that will inject model state and model actions into the component.
- * @param model - Model instance from which to get the state and actions. To
- * reuse state use the same model instance on multiple places.
+ * @param model - Model instance, created by makeModel factory from which to get
+ * the state and actions. To reuse state use the same model instance on multiple
+ * places.
  * @param mapProps - Function where you can map state and actions before they are
  * injected, either to select some smaller part of the state or give some specific
- * name to the injected props.
+ * name to the injected props. Actions will in addition include an setState
+ * function.
  */
 export const withModel = <
   A extends ActionObject<S>,
