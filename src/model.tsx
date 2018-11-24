@@ -111,8 +111,10 @@ export const withModel = <
   S,
   MappedProps,
   P extends { [key: string]: any },
-  OwnProps extends Subtract<P, MappedProps>,
-  InnerProps extends PropsInjectedByConnect<S> & OwnProps
+
+  // These are mainly a shorthand for some inner types
+  OwnProps extends Subtract<P, MappedProps> = Subtract<P, MappedProps>,
+  InnerProps extends PropsInjectedByConnect<S> & OwnProps = PropsInjectedByConnect<S> & OwnProps
 >(
   model: Model<S, A>,
   mapProps: (
