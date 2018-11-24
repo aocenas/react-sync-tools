@@ -111,13 +111,14 @@ export const withModel = <
   S,
   MappedProps,
   P extends { [key: string]: any },
-  InnerProps extends PropsInjectedByConnect<S> & Subtract<P, MappedProps>
+  OwnProps extends Subtract<P, MappedProps>,
+  InnerProps extends PropsInjectedByConnect<S> & OwnProps
 >(
   model: Model<S, A>,
   mapProps: (
     state: S,
     actions: ActionsWithSetState<MappedActions<A>, S>,
-    props: InnerProps,
+    props: Readonly<OwnProps>,
   ) => MappedProps,
 ) => {
   return (WrappedComponent: React.ComponentType<P>) => {
@@ -137,7 +138,11 @@ export const withModel = <
 
       public render() {
         // Remove props which are here from the Redux
-        const ownProps = omit(this.props, ['modelState', 'modelUpdateAction'])
+        const ownProps = (omit(this.props, [
+          'modelState',
+          'modelUpdateAction',
+          'children',
+        ]) as unknown) as OwnProps
 
         // Use the mapProps function to map props provided by this HOC. This way
         // client can decide what he needs
