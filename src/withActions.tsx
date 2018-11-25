@@ -186,6 +186,9 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
 
         // If no error, we update the action state with response.
         delete this.cancelTokens[key]
+
+        // TODO: in case function did not use cancelToken we can be here after
+        //  the component unmount
         this.setState({
           [key]: {
             run: this.state[key].run,
