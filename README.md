@@ -1,4 +1,4 @@
-# Reagent
+# React Sync Tools
 
 A set of HOCs to help with state management and data fetching. Main goals are ease of use and incremental composability
 while building on top of Redux.

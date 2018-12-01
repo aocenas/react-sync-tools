@@ -6,7 +6,7 @@ import { getDisplayName, Subtract } from './utils'
 import {
   modelUpdateActionCreator,
   modelSetStateActionCreator,
-  registerReducer,
+  registerReducer, storeKey,
 } from './model-redux'
 
 /**
@@ -178,17 +178,17 @@ export const withModel = <
     }
 
     return connect(
-      (state: { reagent?: { [modelId: string]: any } }) => {
-        if (!state.reagent) {
+      (state: any) => {
+        if (!state[storeKey]) {
           throw new Error(
-            'There is not a reagent substore, you probably forgot to add it to your redux store',
+            `There is not a "${storeKey}" substore, you probably forgot to add it to your redux store`,
           )
         }
         return {
           modelState:
-            state.reagent[model.id] === undefined
+            state[storeKey][model.id] === undefined
               ? model.defaultState
-              : state.reagent[model.id],
+              : state[storeKey][model.id],
         } as { modelState: S }
       },
       {

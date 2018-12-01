@@ -1,5 +1,5 @@
 export { withActions, ActionProp } from './withActions'
 export { onChange } from './onChange'
 export { makeModel, withModel } from './model'
-export { reducer } from './model-redux'
+export { reducer, storeKey } from './model-redux'
 export { ActionShape } from './propTypes'

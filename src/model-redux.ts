@@ -1,7 +1,8 @@
 import startsWith = require('lodash/startsWith')
 import { Dispatch } from 'redux'
 
-const actionPrefix = '@reagent/modelUpdate'
+const actionPrefix = '@react-sync-tools/modelUpdate'
+export const storeKey = 'react-sync-tools-models'
 
 /**
  * Action creator that allows to either completely replace the model state or
@@ -15,7 +16,7 @@ export const modelSetStateActionCreator = <S extends any>(
 ) => (dispatch: Dispatch, getState: () => S) => {
   let payload = newStateOrFunc
   if (typeof newStateOrFunc === 'function') {
-    payload = newStateOrFunc(getState().reagent[modelId])
+    payload = newStateOrFunc(getState()[storeKey][modelId])
   }
   dispatch({
     type: [actionPrefix, modelId, 'setState'].join('/'),

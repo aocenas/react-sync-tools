@@ -5,7 +5,7 @@ import { Provider } from 'react-redux'
 import thunk from 'redux-thunk'
 
 import { makeModel, withModel } from './model'
-import { reducer } from './model-redux'
+import { reducer, storeKey } from './model-redux'
 
 type UserModel = {
   name: string
@@ -13,7 +13,7 @@ type UserModel = {
 } | null
 
 const createSimpleApp = () => {
-  const store = createStore(combineReducers({ reagent: reducer }), applyMiddleware(thunk))
+  const store = createStore(combineReducers({ [storeKey]: reducer }), applyMiddleware(thunk))
 
   class TestComponent extends React.PureComponent<{
     user: UserModel
