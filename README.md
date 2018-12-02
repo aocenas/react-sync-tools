@@ -3,6 +3,42 @@
 A set of HOCs to help with state management and data fetching. Main goals are ease of use and incremental composability
 while building on top of Redux.
 
+## Installation
+
+```bash
+yarn install react-sync-tools
+# install peer dependencies if you do not have the already
+yarn install axios prop-types react react-redux redux redux-thunk
+```
+
+### Setup redux store
+```javascript
+import { reducer, storeKey } from 'react-sync-tools'
+import { Provider } from 'react-redux'
+import { createStore, combineReducers, applyMiddleware } from 'redux'
+import thunk from 'redux-thunk'
+
+const store = createStore(
+  combineReducers({
+      // You need to specify our reducer here. 
+      [storeKey]: reducer,
+      // You can also add your own reducer here so that state for models
+      // and your own state will coexist. 
+      someOtherState: someReducer
+  }),
+  applyMiddleware(thunk)
+)
+
+render(
+  <Provider store={store}>
+    <YourApp />
+  </Provider>,
+  document.querySelector('#app'),
+)
+
+```
+
+
 ## HOCs:
 
 ### withActions
