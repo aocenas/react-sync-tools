@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { getDisplayName, hasChanged } from './utils'
+import { getDisplayName, hasChanged, GetProps, Matching } from './utils'
+import { Props } from 'react'
 
 /**
  * Simple helper that runs supplied function on each change of the specified
@@ -15,24 +16,36 @@ import { getDisplayName, hasChanged } from './utils'
  * @param action - Simple function with side effect that will get props as
  *   argument.
  */
-export const onChange = <P extends {}>(
-  propsList: Array<keyof P>,
-  action: (props: P) => void,
-) => (WrappedComponent: React.ComponentType<P>) =>
-  class OnChange extends React.PureComponent<P> {
+export const onChange = <ActionProps, CheckProps extends {}>(
+  propsList: Array<keyof CheckProps>,
+  action: (props: ActionProps) => void,
+) => <C extends React.ComponentType<Matching<ActionProps, GetProps<C>>>>(WrappedComponent: C) =>
+  class OnChange extends React.PureComponent<
+    JSX.LibraryManagedAttributes<C, GetProps<C>> & ActionProps & CheckProps
+  > {
     public static displayName = `OnChange(${getDisplayName(WrappedComponent)})`
 
     public componentDidMount() {
       action(this.props)
     }
 
-    public componentDidUpdate(prevProps: P) {
+    public componentDidUpdate(prevProps: CheckProps) {
       if (propsList && hasChanged(propsList, prevProps, this.props)) {
         action(this.props)
       }
     }
 
     public render() {
-      return <WrappedComponent {...this.props} />
+      return <WrappedComponent {...(this.props as any)} />
     }
   }
+
+class A extends React.Component<{ test: string }> {
+  public render() {
+    return ''
+  }
+}
+const Comp = onChange(['test'], (props: { test: string }) => {
+  console.log()
+})(A)
+const c = <Comp test={1} />
