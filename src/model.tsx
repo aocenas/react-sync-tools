@@ -2,11 +2,12 @@ import omit = require('lodash/omit')
 import * as React from 'react'
 import { connect } from 'react-redux'
 
-import { getDisplayName, Subtract } from './utils'
+import { getDisplayName, Matching, Subtract, GetProps, Omit } from './utils'
 import {
   modelUpdateActionCreator,
   modelSetStateActionCreator,
-  registerReducer, storeKey,
+  registerReducer,
+  storeKey,
 } from './model-redux'
 
 /**
@@ -110,91 +111,96 @@ export const withModel = <
   A extends ActionObject<S>,
   S,
   MappedProps,
-  P extends { [key: string]: any },
-
-  // These are mainly a shorthand for some inner types
-  OwnProps extends Subtract<P, MappedProps> = Subtract<P, MappedProps>,
-  InnerProps extends PropsInjectedByConnect<S> & OwnProps = PropsInjectedByConnect<S> & OwnProps
+  ActionProps
 >(
   model: Model<S, A>,
   mapProps: (
     state: S,
     actions: ActionsWithSetState<MappedActions<A>, S>,
-    props: Readonly<OwnProps>,
+    props: Readonly<ActionProps>,
   ) => MappedProps,
+) => <C extends React.ComponentType<Matching<MappedProps, GetProps<C>>>>(
+  WrappedComponent: C,
 ) => {
-  return (WrappedComponent: React.ComponentType<P>) => {
-    class ComponentState extends React.PureComponent<InnerProps> {
-      public static displayName = `ComponentModel(${getDisplayName(
-        WrappedComponent,
-      )})`
+  class ComponentState extends React.PureComponent<
+    JSX.LibraryManagedAttributes<C, Omit<GetProps<C>, keyof MappedProps>> &
+      ActionProps &
+      PropsInjectedByConnect<S>
+  > {
+    public static displayName = `ComponentModel(${getDisplayName(
+      WrappedComponent,
+    )})`
 
-      // Keep the mapped actions cached here so we do not recreate them on each
-      // render.
-      private readonly modelActions: ActionsWithSetState<MappedActions<A>, S>
+    // Keep the mapped actions cached here so we do not recreate them on each
+    // render.
+    private readonly modelActions: ActionsWithSetState<MappedActions<A>, S>
 
-      constructor(props: InnerProps) {
-        super(props)
-        this.modelActions = this.createMappedActions(props)
-      }
-
-      public render() {
-        // Remove props which are here from the Redux
-        const ownProps = (omit(this.props, [
-          'modelState',
-          'modelUpdateAction',
-          'children',
-        ]) as unknown) as OwnProps
-
-        // Use the mapProps function to map props provided by this HOC. This way
-        // client can decide what he needs
-        const mappedProps = mapProps(
-          this.props.modelState,
-          this.modelActions,
-          ownProps,
-        )
-        return <WrappedComponent {...mappedProps} {...ownProps} />
-      }
-
-      private createMappedActions(
-        props: InnerProps,
-      ): ActionsWithSetState<MappedActions<A>, S> {
-        const actionsMapped = Object.keys(model.actions).reduce<{
-          [key: string]: (arg: any) => void
-        }>((acc, key) => {
-          acc[key] = (...args: any[]) => {
-            props.modelUpdateAction(model.id, key, ...args)
-          }
-          return acc
-        }, {}) as MappedActions<A>
-
-        actionsMapped.setState = (funcOrObj: SetStateFuncArg<S>) => {
-          props.modelSetStateAction(model.id, funcOrObj)
-        }
-
-        // TS does not get that we actually added the setState to the action
-        return actionsMapped as any
-      }
+    constructor(props: any) {
+      super(props)
+      this.modelActions = this.createMappedActions(props)
     }
 
-    return connect(
-      (state: any) => {
-        if (!state[storeKey]) {
-          throw new Error(
-            `There is not a "${storeKey}" substore, you probably forgot to add it to your redux store`,
-          )
+    public render() {
+      // Remove props which are here from the Redux
+      const outerProps = omit(this.props, [
+        'modelState',
+        'modelUpdateAction',
+        'children',
+      ])
+
+      // Use the mapProps function to map props provided by this HOC. This way
+      // client can decide what he needs
+      const mappedProps = mapProps(
+        this.props.modelState,
+        this.modelActions,
+        outerProps,
+      )
+
+      const newProps = {
+        ...outerProps,
+        ...mappedProps,
+      } as any
+      return <WrappedComponent {...newProps} />
+    }
+
+    private createMappedActions(
+      props: PropsInjectedByConnect<S>,
+    ): ActionsWithSetState<MappedActions<A>, S> {
+      const actionsMapped = Object.keys(model.actions).reduce<{
+        [key: string]: (arg: any) => void
+      }>((acc, key) => {
+        acc[key] = (...args: any[]) => {
+          props.modelUpdateAction(model.id, key, ...args)
         }
-        return {
-          modelState:
-            state[storeKey][model.id] === undefined
-              ? model.defaultState
-              : state[storeKey][model.id],
-        } as { modelState: S }
-      },
-      {
-        modelUpdateAction: modelUpdateActionCreator,
-        modelSetStateAction: modelSetStateActionCreator,
-      },
-    )(ComponentState)
+        return acc
+      }, {}) as MappedActions<A>
+
+      actionsMapped.setState = (funcOrObj: SetStateFuncArg<S>) => {
+        props.modelSetStateAction(model.id, funcOrObj)
+      }
+
+      // TS does not get that we actually added the setState to the action
+      return actionsMapped as any
+    }
   }
+
+  return connect(
+    (state: any) => {
+      if (!state[storeKey]) {
+        throw new Error(
+          `There is not a "${storeKey}" substore, you probably forgot to add it to your redux store`,
+        )
+      }
+      return {
+        modelState:
+          state[storeKey][model.id] === undefined
+            ? model.defaultState
+            : state[storeKey][model.id],
+      } as { modelState: S }
+    },
+    {
+      modelUpdateAction: modelUpdateActionCreator,
+      modelSetStateAction: modelSetStateActionCreator,
+    },
+  )(ComponentState as any /* TODO */)
 }
