@@ -1,14 +1,14 @@
 import mapValues = require('lodash/mapValues')
 import axios, { CancelTokenSource, CancelToken } from 'axios'
 import * as React from 'react'
-import { getDisplayName, Subtract } from './utils'
+import { getDisplayName, Matching, GetProps, Omit } from './utils'
 
 /**
  * Definition of the code run by the action. You can use cancelToken to
  * implement cancellation (see config to configure cancelToken creation)
  */
-type ActionFunc = (
-  args: { cancelToken: CancelToken; props: any; params: any },
+type ActionFunc<P> = (
+  args: { cancelToken: CancelToken; props: P; params: any },
 ) => Promise<{ data: any }>
 
 /**
@@ -16,9 +16,9 @@ type ActionFunc = (
  * props and params that were supplied to the action function. It is not called
  * if your action function throws.
  */
-type AfterFunc = (
+type AfterFunc<P> = (
   response: { data: any },
-  props: any,
+  props: P,
   params: any,
 ) => void | Promise<void>
 
@@ -63,24 +63,26 @@ export interface ActionProp<R = any> {
   response?: R
 }
 
-export type State<P extends string | number | symbol> = Record<P, ActionProp>
+type MappedActions<P, A extends { [key: string]: ActionDef<P> }> = {
+  [K in keyof A]: ActionProp
+}
 
-export type ActionDef =
+export type ActionDef<P> =
   // Just an action function
-  | ActionFunc
+  | ActionFunc<P>
 
   // Array with action function as a first element and options as a second. Options are passed into custom errorHandler
   // function so that you can change error handling for some particular action. For example you can have some default
   // handling for all actions, but you do not want that for you form submit actions where you want to show 400 responses
   // inline.
-  | [ActionFunc, object]
+  | [ActionFunc<P>, object]
 
   // An object with in addition can define after function.
   | {
-      action: ActionFunc
+      action: ActionFunc<P>
       // Function that will be invoked with the response of the action. Mainly
       // for convenience as you could inline it into action.
-      after?: AfterFunc
+      after?: AfterFunc<P>
       // This is not used by the code here but it is passed to custom errorHandler
       options?: any
     }
@@ -94,16 +96,16 @@ export type ActionDef =
  * object, it is just passed to config.errorHandler so you can use it to have
  * action specific error handling.
  */
-export const withActions = <A extends { [key: string]: ActionDef }>(
+export const withActions = <ActionProps, A extends { [key: string]: ActionDef<ActionProps> }>(
   actions: A,
-) => <P extends { [key: string]: any }>(
-  WrappedComponent: React.ComponentType<P>,
-) => {
-  type InnerProps = Subtract<P, A>
-
+) => <C extends React.ComponentType<Matching<MappedActions<ActionProps, A>, GetProps<C>>>>(
+  WrappedComponent: C,
+): React.ComponentType<
+  JSX.LibraryManagedAttributes<C, Omit<GetProps<C>, keyof A>> & ActionProps
+> => {
   return class ComponentActions extends React.PureComponent<
-    InnerProps,
-    State<keyof A>
+    JSX.LibraryManagedAttributes<C, Omit<GetProps<C>, keyof A>> & ActionProps,
+    MappedActions<ActionProps, A>
   > {
     public static displayName = `ComponentActions(${getDisplayName(
       WrappedComponent,
@@ -112,17 +114,15 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
     /**
      * Cancel tokens of in progress actions. Used for cancellation on unmount.
      */
-    private readonly cancelTokens: Partial<
-      { [K in keyof A]: CancelTokenSource }
-    > = {}
+    private readonly cancelTokens: { [K in keyof A]?: CancelTokenSource } = {}
 
-    constructor(props: InnerProps) {
+    constructor(props: any) {
       super(props)
       this.cancelTokens = {}
       this.state = mapValues(
         actions,
         this.actionArgToActionPropMapper,
-      ) as State<keyof A>
+      ) as MappedActions<ActionProps, A>
     }
 
     public componentWillUnmount() {
@@ -132,7 +132,12 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
     }
 
     public render() {
-      return <WrappedComponent {...this.props} {...this.state} />
+      // Unfortunately we need to cast to any here.
+      const props = {
+        ...this.props,
+        ...this.state
+      } as any
+      return <WrappedComponent {...props} />
     }
 
     /**
@@ -145,8 +150,8 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
      * @param options
      */
     private createRunHandler = (
-      func: ActionFunc,
-      afterFunc: AfterFunc | undefined | null,
+      func: ActionFunc<ActionProps>,
+      afterFunc: AfterFunc<ActionProps> | undefined | null,
       key: keyof A,
       options: any,
     ): RunHandler => {
@@ -167,7 +172,7 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
               ...(this.state[key] as ActionProp),
               isLoading: true,
             }
-        this.setState({ [key]: newActionProp } as State<keyof A>)
+        this.setState({ [key]: newActionProp })
 
         let response
         try {
@@ -195,7 +200,7 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
             isLoading: false,
             response,
           },
-        } as State<keyof A>)
+        })
       }
     }
 
@@ -242,7 +247,7 @@ export const withActions = <A extends { [key: string]: ActionDef }>(
      * @param key
      */
     private actionArgToActionPropMapper = (
-      func: ActionDef,
+      func: ActionDef<ActionProps>,
       key: keyof A,
     ): ActionProp => {
       let options

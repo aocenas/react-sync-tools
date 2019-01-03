@@ -6,7 +6,7 @@ import { withActions, ActionDef } from './withActions'
 const setupComponent = (mockActionImpl?: (token: any, arg: any) => void) => {
   const Component = jest.fn(() => null)
   const mockAction = jest.fn(mockActionImpl)
-  const actions = { mock: [mockAction, { someOption: true }] as ActionDef }
+  const actions = { mock: [mockAction, { someOption: true }] as ActionDef<any> }
   const WrappedComponent = withActions(actions)(Component)
 
   const wrapper = shallow(<WrappedComponent id={1} />)
