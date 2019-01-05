@@ -3,23 +3,25 @@ import { Todo } from './todosModel'
 import { buttonStyle } from './style'
 import { withTodos } from './todosModel'
 
-interface Props {
-  todoId: number | string,
+interface InjectedProps {
   todo: Todo
   deleteTodo: (id: number) => void
   completeTodo: (id: number) => void
   undoTodo: (id: number) => void
   updateTodoText: (id: number, text: string) => void
 }
+interface OwnProps {
+  todoId: number | string
+}
 
 // tslint:disable-next-line:variable-name
-const _TodoItem: React.ComponentType<Props> = ({
+const _TodoItem = ({
   todo,
   deleteTodo,
   completeTodo,
   undoTodo,
   updateTodoText,
-}: Props) => {
+}: InjectedProps & OwnProps) => {
   return (
     <div
       style={{
@@ -60,7 +62,7 @@ const _TodoItem: React.ComponentType<Props> = ({
   )
 }
 
-export const TodoItem = (withTodos((state, actions, props) => {
+export const TodoItem = withTodos((state, actions, props) => {
   return {
     todo: state[props.todoId],
     deleteTodo: actions.deleteTodo,
@@ -68,6 +70,4 @@ export const TodoItem = (withTodos((state, actions, props) => {
     updateTodoText: actions.updateTodoText,
     undoTodo: actions.undoTodo,
   }
-  // TODO: out of idea here why it does not pick the correct props without
-  // force casting
-})(_TodoItem) as any) as React.ComponentType<{todoId: number | string}>
+})(_TodoItem) as React.ComponentType<OwnProps>

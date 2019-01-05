@@ -27,7 +27,7 @@ interface ActionObject<S> {
   [name: string]: ActionFunc<S>
 }
 
-interface Model<S, A extends ActionObject<S>> {
+export interface Model<S, A extends ActionObject<S>> {
   /**
    * Id is a name of the model plus some random string for uniqueness.
    */
@@ -46,6 +46,7 @@ type SetStateFuncArg<S> = S | SetStateFuncFuncArg<S>
 type SetStateFunc<S> = (arg: SetStateFuncArg<S>) => void
 
 type ActionsWithSetState<A, S> = A & { setState: SetStateFunc<S> }
+export type MapPropsActionsArg<A, S> = ActionsWithSetState<MappedActions<A>, S>
 
 interface PropsInjectedByConnect<S> {
   modelUpdateAction: typeof modelUpdateActionCreator
@@ -116,7 +117,7 @@ export const withModel = <
   model: Model<S, A>,
   mapProps: (
     state: S,
-    actions: ActionsWithSetState<MappedActions<A>, S>,
+    actions: MapPropsActionsArg<A, S>,
     props: Readonly<ActionProps>,
   ) => MappedProps,
 ) => <C extends React.ComponentType<Matching<MappedProps, GetProps<C>>>>(

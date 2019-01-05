@@ -4,6 +4,8 @@ import * as React from 'react'
 import { keyBy } from 'lodash'
 import { withModel, withActions, makeModel } from '../../src'
 import * as TodosClient from './todosClient'
+import { GetProps, Matching, Omit } from '../../src/utils'
+import { MapPropsActionsArg, Model } from '../../src/model'
 
 export interface Todo {
   id: number
@@ -87,10 +89,18 @@ const actions = {
   },
 }
 
-export const withTodos = <P extends {}, Selected extends {}>(
-  selector: (state: Todos, actions: any, props: any) => Selected,
-) => (component: React.ComponentType<P>) =>
-  withModel(todosModel, (state, modelActions, props) =>
+type GetModelActions<M> = M extends Model<infer S, infer A> ? A : never
+
+// TODO: properly type return types
+export const withTodos = <P extends {}, Selected extends {}, A extends {}>(
+  selector: (
+    state: Todos,
+    actionsArg: MapPropsActionsArg<GetModelActions<typeof todosModel>, Todos>,
+    props: any,
+  ) => Selected,
+) => <C extends React.ComponentType<GetProps<C>>>(component: C) => {
+  const ComponentWithActions: any = withActions(actions)(component)
+  return (withModel(todosModel, (state, modelActions, props) =>
     Object.assign(
       {
         // model actions needed by the actions
@@ -99,4 +109,7 @@ export const withTodos = <P extends {}, Selected extends {}>(
       },
       selector(state, modelActions, props),
     ),
-  )(withActions(actions)(component))
+  )(ComponentWithActions) as unknown) as React.ComponentType<
+    Omit<GetProps<C>, keyof Selected>
+  >
+}
